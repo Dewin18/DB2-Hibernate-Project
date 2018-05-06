@@ -29,3 +29,7 @@ target/
 *.xcf
 
 *.properties
+
+*.xml
+
+*.jar
