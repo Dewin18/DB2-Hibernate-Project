@@ -32,6 +32,8 @@ public interface EstateServiceIF {
     
     public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent);
 
+    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID);
+    
     public boolean estateAndHouseIsManaged(int estateAgentID, 
 					   String city, 
 					   String postalCode, 
@@ -53,6 +55,4 @@ public interface EstateServiceIF {
 	    				      int rooms, 
 	    				      int balcony, 
 	    				      int kitchen);
-    
-    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID);
 }

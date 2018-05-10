@@ -22,6 +22,20 @@ public class ContractServiceImpl implements ContractServiceIF {
     }
 
     @Override
+    public List<Contract> getContractList() {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Contract> contracts = 
+	session.createQuery("from Contract").getResultList();
+	session.getTransaction().commit();
+	session.close();
+	return contracts;
+    }
+    
+    @Override
     public boolean insertContract(Contract newContract) {
 	
 	Session session = _hibernateConnection.getNewSession();
@@ -74,19 +88,23 @@ public class ContractServiceImpl implements ContractServiceIF {
 	    return false;
 	}
     }
-
+    
     @Override
-    public List<Contract> getContractList() {
+    public boolean insertPerson(Person newPerson) {
 	
 	Session session = _hibernateConnection.getNewSession();
 
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<Contract> contracts = 
-	session.createQuery("from Contract").getResultList();
-	session.getTransaction().commit();
-	session.close();
-	return contracts;
+	try {
+	    session.beginTransaction();
+	    session.save(newPerson);
+	    session.getTransaction().commit();
+	    session.close();
+	    return true;
+	} catch (ConstraintViolationException e) {
+	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
+	}
     }
 
     @Override
@@ -107,24 +125,6 @@ public class ContractServiceImpl implements ContractServiceIF {
 	session.getTransaction().commit();
 	session.close();
 	return !persons.isEmpty();
-    }
-
-    @Override
-    public boolean insertPerson(Person newPerson) {
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	try {
-	    session.beginTransaction();
-	    session.save(newPerson);
-	    session.getTransaction().commit();
-	    session.close();
-	    return true;
-	} catch (ConstraintViolationException e) {
-	    e.printStackTrace();
-	    session.getTransaction().rollback();
-	    return false;
-	}
     }
 
     @Override

@@ -20,24 +20,6 @@ public class EstateServiceImpl implements EstateServiceIF {
     }
     
     @Override
-    public int getEstateAgentIDFromLoginName(String loginName) {
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<EstateAgent> agents = 
-	session.createQuery("from EstateAgent a "
-			  + "where a._login = '" + loginName + "'")
-			  .getResultList();
-	
-	EstateAgent agent = agents.get(0); 
-	session.getTransaction().commit();
-	session.close();
-	return agent.getId();
-    }
-    
-    @Override
     public boolean insertNewEstate(Estate newEstate) {
 	
 	Session session = _hibernateConnection.getNewSession();
@@ -71,87 +53,7 @@ public class EstateServiceImpl implements EstateServiceIF {
 	    return false;
 	}
     }
-
-    @Override
-    public boolean estateAndHouseIsManaged(int estateAgentID, String city, String postalCode, String street, String streetNumber, String squareArea, int floors, double price, int garden) {
-	
-	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
-	boolean houseIsManaged = houseIsManaged(floors, price, garden);
-	
-	return estateIsManaged && houseIsManaged;
-    }
-
-    private boolean estateIsManaged(int estateAgentID, String city, String postalCode, String street,
-	    String streetNumber, String squareArea) {
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<Estate> estate = 
-	session.createQuery("from Estate e "
-			  + "where e._estateAgentID = '" + estateAgentID + "' "
-			  + "and e._city = '" + city + "' "
-			  + "and e._postalCode = '" + postalCode + "' "
-			  + "and e._street = '" + street + "' "
-		 	  + "and e._streetNumber = '" + streetNumber + "' "
-			  + "and e._squareArea = '" + squareArea + "'")
-			  .getResultList();
-	
-	
-	session.getTransaction().commit();
-	session.close();
-	return !estate.isEmpty();
-    }
     
-    private boolean houseIsManaged(int floors, double price, int garden) {
-
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<House> houses = 
-	session.createQuery("from House h "
-                          + "where h._floors = '" + floors + "' "
-			  + "and h._price = '" + price + "' "
-			  + "and h._garden = '" + garden + "'")
-		          .getResultList();
-	
-	session.getTransaction().commit();
-	session.close();
-	return !houses.isEmpty();	
-     }
-    
-    private boolean apartmentIsManaged(int floor, double rent, int rooms, int balcony, int kitchen) {
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<Apartment> apartments = 
-	session.createQuery("from Apartment a "
-                          + "where a._floor = '" + floor + "' "
-			  + "and a._rent = '" + rent + "' "
-			  + "and a._rooms = '" + rooms + "' "
-			  + "and a._balcony = '" + balcony + "' "
-			  + "and a._kitchen = '" + kitchen + "'")
-		          .getResultList();
-	
-	session.getTransaction().commit();
-	session.close();
-	return !apartments.isEmpty();
-    }
-
-    @Override
-    public boolean estateAndApartmentIsManaged(int estateAgentID, String city, String postalCode, String street,
-	    String streetNumber, String squareArea, int floor, double rent, int rooms, int balcony, int kitchen) {
-	
-	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
-	boolean apartmentIsManaged = apartmentIsManaged(floor, rent, rooms, balcony, kitchen);
-	
-	return estateIsManaged && apartmentIsManaged;
-    }
-
     @Override
     public boolean insertNewApartment(Apartment newApartment) {
 	Session session = _hibernateConnection.getNewSession();
@@ -168,84 +70,7 @@ public class EstateServiceImpl implements EstateServiceIF {
 	    return false;
 	}
     }
-  
-//    @Override
-//    public boolean estateAgentManagesApartment(EstateAgent estateAgent, String estateID) {
-//	
-//	int estateAgentID = estateAgent.getId();
-//	
-//	try {
-//	    String sqlSelectStatement = 
-//		    "SELECT * " 
-//		  + "FROM estate e, apartment a "
-//		  + "WHERE e.id_estate = a.fk_id_estate "
-//		  + "AND e.id_estate = '" + estateID + "' "
-//		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
-//
-//	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-//	    if(resultSet.next()) return true;
-//	} catch (SQLException e) {
-//	    e.printStackTrace();
-//	}
-//	return false;
-//    }
-//    
-//    @Override
-//    public boolean estateAgentManagesHouse(EstateAgent estateAgent, String estateID) {
-//	
-//	int estateAgentID = estateAgent.getId();
-//	
-//	try {
-//	    String sqlSelectStatement = 
-//		    "SELECT * " 
-//		  + "FROM estate e, house h "
-//		  + "WHERE e.id_estate = h.fk_id_estate "
-//		  + "AND e.id_estate = '" + estateID + "' "
-//		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
-//	  
-//	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-//	    if(resultSet.next()) return true;
-//	} catch (SQLException e) {
-//	    e.printStackTrace();
-//	}
-//	return false;
-//    }
     
-    @Override
-    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID) {
-	
-	int estateAgentID = estateAgent.getId();
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	@SuppressWarnings("unchecked")
-	List<Estate> estate = 
-	session.createQuery("from Estate e "
-                          + "where e._estateID = '" + estateID + "' "
-			  + "and e._estateAgentID = '" + estateAgentID + "'")
-		          .getResultList();
-	
-	session.getTransaction().commit();
-	session.close();
-	return !estate.isEmpty();
-    }
-    
-    @Override
-    public boolean deleteEstate(String estateID) {
-	
-	Session session = _hibernateConnection.getNewSession();
-
-	session.beginTransaction();
-	int affectedRows = session.createQuery("delete from Estate where _estateID = '" + estateID + "'")
-		.executeUpdate();
-	session.getTransaction().commit();
-	session.close();
-
-	boolean deleted = (affectedRows == 1) ? true : false;
-	return deleted;
-    }
-
     @Override
     public boolean updateEstate(String estateID, String[] newEstateAttributes) {
 	Session session = _hibernateConnection.getNewSession();
@@ -321,7 +146,40 @@ public class EstateServiceImpl implements EstateServiceIF {
 	session.getTransaction().rollback();
 	return false;
     }
+    
+    @Override
+    public boolean deleteEstate(String estateID) {
+	
+	Session session = _hibernateConnection.getNewSession();
 
+	session.beginTransaction();
+	int affectedRows = session.createQuery("delete from Estate where _estateID = '" + estateID + "'")
+		.executeUpdate();
+	session.getTransaction().commit();
+	session.close();
+
+	boolean deleted = (affectedRows == 1) ? true : false;
+	return deleted;
+    }
+    
+    @Override
+    public int getEstateAgentIDFromLoginName(String loginName) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<EstateAgent> agents = 
+	session.createQuery("from EstateAgent a "
+			  + "where a._login = '" + loginName + "'")
+			  .getResultList();
+	
+	EstateAgent agent = agents.get(0); 
+	session.getTransaction().commit();
+	session.close();
+	return agent.getId();
+    }
+    
     @Override
     public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent) {
 	
@@ -335,5 +193,105 @@ public class EstateServiceImpl implements EstateServiceIF {
 	session.getTransaction().commit();
 	session.close();
 	return estate;
+    }
+    
+    @Override
+    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID) {
+	
+	int estateAgentID = estateAgent.getId();
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = 
+	session.createQuery("from Estate e "
+                          + "where e._estateID = '" + estateID + "' "
+			  + "and e._estateAgentID = '" + estateAgentID + "'")
+		          .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !estate.isEmpty();
+    }
+
+    @Override
+    public boolean estateAndHouseIsManaged(int estateAgentID, String city, String postalCode, String street, String streetNumber, String squareArea, int floors, double price, int garden) {
+	
+	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
+	boolean houseIsManaged = houseIsManaged(floors, price, garden);
+	
+	return estateIsManaged && houseIsManaged;
+    }
+    
+    @Override
+    public boolean estateAndApartmentIsManaged(int estateAgentID, String city, String postalCode, String street,
+	    String streetNumber, String squareArea, int floor, double rent, int rooms, int balcony, int kitchen) {
+	
+	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
+	boolean apartmentIsManaged = apartmentIsManaged(floor, rent, rooms, balcony, kitchen);
+	
+	return estateIsManaged && apartmentIsManaged;
+    }
+
+    private boolean estateIsManaged(int estateAgentID, String city, String postalCode, String street,
+	    String streetNumber, String squareArea) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = 
+	session.createQuery("from Estate e "
+			  + "where e._estateAgentID = '" + estateAgentID + "' "
+			  + "and e._city = '" + city + "' "
+			  + "and e._postalCode = '" + postalCode + "' "
+			  + "and e._street = '" + street + "' "
+		 	  + "and e._streetNumber = '" + streetNumber + "' "
+			  + "and e._squareArea = '" + squareArea + "'")
+			  .getResultList();
+	
+	
+	session.getTransaction().commit();
+	session.close();
+	return !estate.isEmpty();
+    }
+    
+    private boolean houseIsManaged(int floors, double price, int garden) {
+
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<House> houses = 
+	session.createQuery("from House h "
+                          + "where h._floors = '" + floors + "' "
+			  + "and h._price = '" + price + "' "
+			  + "and h._garden = '" + garden + "'")
+		          .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !houses.isEmpty();	
+     }
+    
+    private boolean apartmentIsManaged(int floor, double rent, int rooms, int balcony, int kitchen) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Apartment> apartments = 
+	session.createQuery("from Apartment a "
+                          + "where a._floor = '" + floor + "' "
+			  + "and a._rent = '" + rent + "' "
+			  + "and a._rooms = '" + rooms + "' "
+			  + "and a._balcony = '" + balcony + "' "
+			  + "and a._kitchen = '" + kitchen + "'")
+		          .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !apartments.isEmpty();
     }
 }
