@@ -7,6 +7,8 @@ import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import main.HibernateConnector;
+import materials.EstateAgent;
 import services.ContractServiceImpl;
 import services.EstateServiceImpl;
 import services.RegisterServiceImpl;
@@ -36,6 +38,8 @@ public class MainTool implements Observer {
 
     private JPanel _registerPanel;
 
+    HibernateConnector _hibernateConnection;
+
     public MainTool() {
 	initTools();
 	setupUI();
@@ -43,14 +47,21 @@ public class MainTool implements Observer {
     }
 
     private void initTools() {
-	_registerEstateManagerTool = new RegisterEstateManagerTool(new RegisterServiceImpl());
-	_loginEstateManagerTool = new LoginEstateManagerTool(new EstateServiceImpl());
-	_contractManagerTool = new ContractManagerTool(new ContractServiceImpl());
+
+	HibernateConnector hibernateConnection = HibernateConnector.getInstance();
+
+	RegisterServiceImpl registerService = new RegisterServiceImpl(hibernateConnection);
+	EstateServiceImpl estateService = new EstateServiceImpl(hibernateConnection);
+	ContractServiceImpl contractService = new ContractServiceImpl(hibernateConnection);
+	
+	_registerEstateManagerTool = new RegisterEstateManagerTool(registerService);
+	_loginEstateManagerTool = new LoginEstateManagerTool(estateService);
+	_contractManagerTool = new ContractManagerTool(contractService);
 
 	_adminPasswordPanelTool = new AdminPasswordPanelTool();
 	_adminPasswordPanelTool.registerNewObserver(this);
 
-	_agentPasswordPanelTool = new AgentPasswordPanelTool();
+	_agentPasswordPanelTool = new AgentPasswordPanelTool(hibernateConnection);
 	_agentPasswordPanelTool.registerNewObserver(this);
 
 	initPanels();
@@ -156,7 +167,7 @@ public class MainTool implements Observer {
 		_mainToolUI.getBackButton().setEnabled(true);
 		_optionPanel.setVisible(false);
 		_window.add(_agentPasswordPanel, BorderLayout.CENTER);
-		
+
 		// TODO _loginEstateManagerTool.resetMessageLabel();
 		_loginEstateManagerTool.resetAllComponents();
 		_agentPasswordPanelTool.getLoginField().setText("");
@@ -198,9 +209,10 @@ public class MainTool implements Observer {
     private void showAgentLogin() {
 	_agentPasswordPanel.setVisible(false);
 	_window.add(_estatePanel, BorderLayout.CENTER);
-
-	String currentUser = _agentPasswordPanelTool.getLoginName();
-	_loginEstateManagerTool.setLoginName(currentUser);
+	EstateAgent loggedInAgent = _agentPasswordPanelTool.getLoggedInAgent();
+	
+	_loginEstateManagerTool.setEstateAgent(loggedInAgent);
+	
 	_estatePanel.setVisible(true);
     }
 }

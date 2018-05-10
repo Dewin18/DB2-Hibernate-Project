@@ -1,317 +1,339 @@
 package services;
 
-import java.sql.*;
+import java.util.List;
 
-import main.DB2ConnectionManager;
+import org.hibernate.Session;
+import org.hibernate.exception.ConstraintViolationException;
+
+import main.HibernateConnector;
 import materials.Apartment;
 import materials.Estate;
+import materials.EstateAgent;
 import materials.House;
 
 public class EstateServiceImpl implements EstateServiceIF {	
     
-    private Connection connection;
-    private Statement stmt;
+    private HibernateConnector _hibernateConnection;
 
-    public EstateServiceImpl() {
-	try {
-	    connection = DB2ConnectionManager.getInstance().getConnection();
-	    stmt = connection.createStatement();
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
+    public EstateServiceImpl(HibernateConnector hibernateConnection) {
+	_hibernateConnection = hibernateConnection;
     }
     
     @Override
     public int getEstateAgentIDFromLoginName(String loginName) {
-	try {
-	    String sqlSelectStatement = 
-			  "SELECT * "
-			+ "FROM estate_agent "
-			+ "WHERE login = '" + loginName + "'";
+	
+	Session session = _hibernateConnection.getNewSession();
 
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-	    
-	    if(resultSet.next()) {
-		return resultSet.getInt("id_estate_agent");
-	    }
-	    
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return -1;
-    }
-
-
-    @Override
-    public boolean insertNewEstate(Estate estate) {
-	try {
-	    String sqlInsertEstateStatement = 
-		    "INSERT INTO "
-	           + "estate(FK_ID_ESTATE_AGENT, CITY, POSTAL_CODE, STREET, STREET_NUMBER, SQUARE_AREA) "
-	           + "VALUES (?, ?, ?, ?, ?, ?)";
-	    
-	    PreparedStatement insertEstateStmt = connection.prepareStatement(sqlInsertEstateStatement);
-
-	    insertEstateStmt.setInt(1, estate.getEstateAgentID());
-	    insertEstateStmt.setString(2, estate.getCity());
-	    insertEstateStmt.setString(3, estate.getPostalCode());
-	    insertEstateStmt.setString(4, estate.getStreet());
-	    insertEstateStmt.setString(5, estate.getStreetNumber());
-	    insertEstateStmt.setString(6, estate.getSquareArea());
-	    insertEstateStmt.executeUpdate();
-	    
-	    return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-		}
-	return false;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<EstateAgent> agents = 
+	session.createQuery("from EstateAgent a "
+			  + "where a._login = '" + loginName + "'")
+			  .getResultList();
+	
+	EstateAgent agent = agents.get(0); 
+	session.getTransaction().commit();
+	session.close();
+	return agent.getId();
     }
     
     @Override
-    public int getEstateID(Estate estate) {
+    public boolean insertNewEstate(Estate newEstate) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
 	try {
-	    String sqlSelectEstateID = 
-		    "SELECT id_estate "
-		  + "FROM estate "
-		  + "WHERE FK_ID_ESTATE_AGENT = '"+ estate.getEstateAgentID() + "' "
-		  + "AND CITY = '" + estate.getCity() + "' "
-		  + "AND POSTAL_CODE = '" + estate.getPostalCode() + "' "
-		  + "AND STREET = '" + estate.getStreet() + "' "
-		  + "AND STREET_NUMBER = '" + estate.getStreetNumber() + "' "
-		  + "AND SQUARE_AREA = '" + estate.getSquareArea() + "'";
-	    
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectEstateID);
-
-	    if(resultSet.next()) {
-		return resultSet.getInt("id_estate");
-	    }
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return -1;
-    }
-
-    @Override
-    public boolean insertNewHouse(House house) {
-	try {
-	    String sqlInsertHouseStatement = 
-		    "INSERT INTO "
-   	          + "house(FK_ID_ESTATE, FLOORS, PRICE, GARDEN) "
-	          + "VALUES (?, ?, ?, ?)";
-	    
-	    PreparedStatement insertHouseStmt = connection.prepareStatement(sqlInsertHouseStatement);
-
-	    insertHouseStmt.setInt(1, house.getEstateID());
-	    insertHouseStmt.setInt(2, house.getFloors());
-	    insertHouseStmt.setDouble(3, house.getPrice());
-	    insertHouseStmt.setInt(4, house.getGarden());
-	    insertHouseStmt.executeUpdate();
+	    session.beginTransaction();
+	    session.save(newEstate);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-		}
-	return false;
+	} catch (ConstraintViolationException e) {
+	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
+	}
+    }
+    
+    @Override
+    public boolean insertNewHouse(House newHouse) {
+	Session session = _hibernateConnection.getNewSession();
+
+	try {
+	    session.beginTransaction();
+	    session.save(newHouse);
+	    session.getTransaction().commit();
+	    session.close();
+	    return true;
+	} catch (ConstraintViolationException e) {
+	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
+	}
     }
 
     @Override
     public boolean estateAndHouseIsManaged(int estateAgentID, String city, String postalCode, String street, String streetNumber, String squareArea, int floors, double price, int garden) {
-	    try {
-		    String sqlSelectEstateAndHouseForAgent = 
-		       "SELECT * "
-		     + "FROM estate e, house h "
-		     + "WHERE e.id_estate = h.fk_id_estate "
-		     + "AND e.FK_ID_ESTATE_AGENT = '"+ estateAgentID + "' "
-		     + "AND e.CITY = '" + city + "' "
-		     + "AND e.POSTAL_CODE = '" + postalCode + "' "
-		     + "AND e.STREET = '" + street + "' "
-		     + "AND e.STREET_NUMBER = '" + streetNumber + "' "
-		     + "AND e.SQUARE_AREA = '" + squareArea + "' "
-		     + "AND h.FLOORS = '" + floors + "' "
-		     + "AND h.PRICE = '" + price + "' "
-		     + "AND h.GARDEN = '" + garden + "'";
-		    
-		ResultSet resultSet = stmt.executeQuery(sqlSelectEstateAndHouseForAgent);
-		
-		if(resultSet.next()) return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-	    }
-	   return false;
+	
+	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
+	boolean houseIsManaged = houseIsManaged(floors, price, garden);
+	
+	return estateIsManaged && houseIsManaged;
     }
 
-    @Override
-    public boolean updateGeneralEntry(String column, String estateID, String newAttribute) {
-	try {
-	    Statement updateStmt = connection.createStatement();
-	    String updateGeneral =  
-		    "UPDATE estate "
-	     	  + "SET " + column + " = '" + newAttribute + "' " 
-	     	  + "WHERE id_estate = '" + estateID + "'";
-	    
-	    updateStmt.executeUpdate(updateGeneral);
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
-    }
+    private boolean estateIsManaged(int estateAgentID, String city, String postalCode, String street,
+	    String streetNumber, String squareArea) {
+	
+	Session session = _hibernateConnection.getNewSession();
 
-    @Override
-    public boolean updateHouseEntry(String column, String estateID, String newAttribute) {
-	try {
-	    String updateHouse =  
-		    "UPDATE house "
-		  + "SET " + column + " = '" + newAttribute + "' " 
-		  + "WHERE fk_id_estate = '" + estateID + "'";
-	    
-	    stmt.executeUpdate(updateHouse);
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
-    }
-
-    @Override
-    public boolean updateApartmentEntry(String column, String estateID, String newAttribute) {
-	try {
-	    String updateApartment =  
-		    "UPDATE apartment "
-		  + "SET " + column + " = '" + newAttribute + "' " 
-		  + "WHERE fk_id_estate = '" + estateID + "'";
-	    
-	    stmt.executeUpdate(updateApartment);
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = 
+	session.createQuery("from Estate e "
+			  + "where e._estateAgentID = '" + estateAgentID + "' "
+			  + "and e._city = '" + city + "' "
+			  + "and e._postalCode = '" + postalCode + "' "
+			  + "and e._street = '" + street + "' "
+		 	  + "and e._streetNumber = '" + streetNumber + "' "
+			  + "and e._squareArea = '" + squareArea + "'")
+			  .getResultList();
+	
+	
+	session.getTransaction().commit();
+	session.close();
+	return !estate.isEmpty();
     }
     
+    private boolean houseIsManaged(int floors, double price, int garden) {
+
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<House> houses = 
+	session.createQuery("from House h "
+                          + "where h._floors = '" + floors + "' "
+			  + "and h._price = '" + price + "' "
+			  + "and h._garden = '" + garden + "'")
+		          .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !houses.isEmpty();	
+     }
+    
+    private boolean apartmentIsManaged(int floor, double rent, int rooms, int balcony, int kitchen) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Apartment> apartments = 
+	session.createQuery("from Apartment a "
+                          + "where a._floor = '" + floor + "' "
+			  + "and a._rent = '" + rent + "' "
+			  + "and a._rooms = '" + rooms + "' "
+			  + "and a._balcony = '" + balcony + "' "
+			  + "and a._kitchen = '" + kitchen + "'")
+		          .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !apartments.isEmpty();
+    }
+
     @Override
     public boolean estateAndApartmentIsManaged(int estateAgentID, String city, String postalCode, String street,
-	    String number, String squareArea, int floor, double rent, int rooms, int balcony, int kitchen) {
-	    try {
-		    String sqlSelectEstateAndApartmentForAgent = 
-			    "SELECT * "
-			  + "FROM estate e, apartment a "
-			  + "WHERE e.id_estate = a.fk_id_estate "
-			  + "AND e.FK_ID_ESTATE_AGENT = '"+ estateAgentID + "' "
-			  + "AND e.CITY = '" + city + "' "
-			  + "AND e.POSTAL_CODE = '" + postalCode + "' "
-			  + "AND e.STREET = '" + street + "' "
-			  + "AND e.STREET_NUMBER = '" + number + "' "
-			  + "AND e.SQUARE_AREA = '" + squareArea + "' "
-			  + "AND a.FLOOR = '" + floor + "' "
-			  + "AND a.RENT = '" + rent + "' "
-			  + "AND a.ROOMS = '" + rooms + "' "
-			  + "AND a.BALCONY = '" + balcony + "' "
-			  + "AND a.BUILT_IN_KITCHEN = '" + kitchen + "'";
-		    
-		ResultSet resultSet = stmt.executeQuery(sqlSelectEstateAndApartmentForAgent);
-		
-		if(resultSet.next()) return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-	    }
-	   return false;
+	    String streetNumber, String squareArea, int floor, double rent, int rooms, int balcony, int kitchen) {
+	
+	boolean estateIsManaged = estateIsManaged(estateAgentID, city, postalCode, street, streetNumber, squareArea);
+	boolean apartmentIsManaged = apartmentIsManaged(floor, rent, rooms, balcony, kitchen);
+	
+	return estateIsManaged && apartmentIsManaged;
     }
 
     @Override
     public boolean insertNewApartment(Apartment newApartment) {
-	try {
-	    String sqlInsertApartmentStatement = 
-		     "INSERT INTO "
-		   + "apartment(FK_ID_ESTATE, FLOOR, RENT, ROOMS, BALCONY, BUILT_IN_KITCHEN) "
-	           + "VALUES (?, ?, ?, ?, ?, ?)";
-	  
-	    PreparedStatement insertApartmentStmt = connection.prepareStatement(sqlInsertApartmentStatement);
+	Session session = _hibernateConnection.getNewSession();
 
-	    insertApartmentStmt.setInt(1,newApartment.getEstateID());
-	    insertApartmentStmt.setInt(2, newApartment.getFloor());
-	    insertApartmentStmt.setDouble(3, newApartment.getRent());
-	    insertApartmentStmt.setInt(4, newApartment.getRooms());
-	    insertApartmentStmt.setInt(5, newApartment.getBalcony());
-	    insertApartmentStmt.setInt(6, newApartment.getKitchen());
-	    insertApartmentStmt.executeUpdate();
+	try {
+	    session.beginTransaction();
+	    session.save(newApartment);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-		}
-	return false;
+	} catch (ConstraintViolationException e) {
+	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
+	}
     }
   
-    @Override
-    public boolean estateAgentManagesApartment(String loginName, String estateID) {
-	
-	int estateAgentID = getEstateAgentIDFromLoginName(loginName);
-	try {
-	    String sqlSelectStatement = 
-		    "SELECT * " 
-		  + "FROM estate e, apartment a "
-		  + "WHERE e.id_estate = a.fk_id_estate "
-		  + "AND e.id_estate = '" + estateID + "' "
-		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
-
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-	    if(resultSet.next()) return true;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
-    }
+//    @Override
+//    public boolean estateAgentManagesApartment(EstateAgent estateAgent, String estateID) {
+//	
+//	int estateAgentID = estateAgent.getId();
+//	
+//	try {
+//	    String sqlSelectStatement = 
+//		    "SELECT * " 
+//		  + "FROM estate e, apartment a "
+//		  + "WHERE e.id_estate = a.fk_id_estate "
+//		  + "AND e.id_estate = '" + estateID + "' "
+//		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
+//
+//	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
+//	    if(resultSet.next()) return true;
+//	} catch (SQLException e) {
+//	    e.printStackTrace();
+//	}
+//	return false;
+//    }
+//    
+//    @Override
+//    public boolean estateAgentManagesHouse(EstateAgent estateAgent, String estateID) {
+//	
+//	int estateAgentID = estateAgent.getId();
+//	
+//	try {
+//	    String sqlSelectStatement = 
+//		    "SELECT * " 
+//		  + "FROM estate e, house h "
+//		  + "WHERE e.id_estate = h.fk_id_estate "
+//		  + "AND e.id_estate = '" + estateID + "' "
+//		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
+//	  
+//	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
+//	    if(resultSet.next()) return true;
+//	} catch (SQLException e) {
+//	    e.printStackTrace();
+//	}
+//	return false;
+//    }
     
     @Override
-    public boolean estateAgentManagesHouse(String loginName, String estateID) {
+    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID) {
 	
-	int estateAgentID = getEstateAgentIDFromLoginName(loginName);
+	int estateAgentID = estateAgent.getId();
 	
-	try {
-	    String sqlSelectStatement = 
-		    "SELECT * " 
-		  + "FROM estate e, house h "
-		  + "WHERE e.id_estate = h.fk_id_estate "
-		  + "AND e.id_estate = '" + estateID + "' "
-		  + "AND e.fk_id_estate_agent = '" + estateAgentID + "'";
-	  
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-	    if(resultSet.next()) return true;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
-    }
+	Session session = _hibernateConnection.getNewSession();
 
-    @Override
-    public boolean estateAgentManagesEstate(String loginName, String estateID) {
-
-	int estateAgentID = getEstateAgentIDFromLoginName(loginName);
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = 
+	session.createQuery("from Estate e "
+                          + "where e._estateID = '" + estateID + "' "
+			  + "and e._estateAgentID = '" + estateAgentID + "'")
+		          .getResultList();
 	
-	try {
-	    String sqlSelectStatement = 
-		    "SELECT * " 
-		  + "FROM estate "
-		  + "WHERE id_estate = '" + estateID + "' "
-		  + "AND fk_id_estate_agent = '" + estateAgentID + "'";
-
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectStatement);
-	    if(resultSet.next()) return true;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
+	session.getTransaction().commit();
+	session.close();
+	return !estate.isEmpty();
     }
     
     @Override
     public boolean deleteEstate(String estateID) {
-	try {
-	    String sqlDeleteStatement = 
-		    "DELETE " 
-		  + "FROM estate " 
-		  + "WHERE id_estate = '" + estateID + "'";
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	int affectedRows = session.createQuery("delete from Estate where _estateID = '" + estateID + "'")
+		.executeUpdate();
+	session.getTransaction().commit();
+	session.close();
+
+	boolean deleted = (affectedRows == 1) ? true : false;
+	return deleted;
+    }
+
+    @Override
+    public boolean updateEstate(String estateID, String[] newEstateAttributes) {
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = session.createQuery("from Estate e where e._estateID = '" + estateID + "'")
+		.getResultList();
+	
+	if (!estate.isEmpty()) {
+	    Estate updatedEstate = estate.get(0);
+
+	    updatedEstate.setCity(newEstateAttributes[0]);
+	    updatedEstate.setPostalCode(newEstateAttributes[1]);
+	    updatedEstate.setStreet(newEstateAttributes[2]);
+	    updatedEstate.setStreetNumber(newEstateAttributes[3]);
+	    updatedEstate.setSquareArea(newEstateAttributes[4]);
 	    
-	    stmt.executeUpdate(sqlDeleteStatement);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	    } catch (SQLException e) {
-		e.printStackTrace();
-	    }
-	return false;
 	}
+	session.getTransaction().rollback();
+	return false;
+    }
+
+    @Override
+    public boolean updateHouse(String houseID, String[] newHouseAttributes) {
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<House> houses = session.createQuery("from House h where h._estateID = '" + houseID + "'")
+		.getResultList();
+	
+	if (!houses.isEmpty()) {
+	    House updatedHouse = houses.get(0);
+
+	    updatedHouse.setFloors(Integer.parseInt(newHouseAttributes[0]));
+	    updatedHouse.setPrice(Double.parseDouble(newHouseAttributes[1]));
+	    updatedHouse.setGarden(Integer.parseInt(newHouseAttributes[2]));
+	    
+	    session.getTransaction().commit();
+	    session.close();
+	    return true;
+	}
+	session.getTransaction().rollback();
+	return false;
+    }
+
+    @Override
+    public boolean updateApartment(String apartmentID, String[] newApartmentAttributes) {
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Apartment> apartments = session.createQuery("from Apartment a where a._estateID = '" + apartmentID + "'")
+		.getResultList();
+	
+	if (!apartments.isEmpty()) {
+	    Apartment updatedApartment= apartments.get(0);
+
+	    updatedApartment.setFloor(Integer.parseInt(newApartmentAttributes[0]));
+	    updatedApartment.setRent(Double.parseDouble(newApartmentAttributes[1]));
+	    updatedApartment.setRooms(Integer.parseInt(newApartmentAttributes[2]));
+	    updatedApartment.setBalcony(Integer.parseInt(newApartmentAttributes[3]));
+	    updatedApartment.setKitchen(Integer.parseInt(newApartmentAttributes[4]));
+	    
+	    session.getTransaction().commit();
+	    session.close();
+	    return true;
+	}
+	session.getTransaction().rollback();
+	return false;
+    }
+
+    @Override
+    public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Estate> estate = session.createQuery("from Estate e where e._estateAgentID = '" + estateAgent.getId() + "'")
+	.getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return estate;
+    }
 }

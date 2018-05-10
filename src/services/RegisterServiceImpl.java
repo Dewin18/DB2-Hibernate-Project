@@ -10,12 +10,16 @@ import materials.EstateAgent;
 
 public class RegisterServiceImpl implements RegisterServiceIF {
 
-    private HibernateConnector hibernateConnection = HibernateConnector.getInstance();
+    private HibernateConnector _hibernateConnection;
 
+    public RegisterServiceImpl(HibernateConnector hibernateConnection) {
+	_hibernateConnection = hibernateConnection;
+    }
+    
     @Override
     public boolean registerEstateAgent(EstateAgent newAgent) {
 
-	Session session = hibernateConnection.getCurrentSession();
+	Session session = _hibernateConnection.getNewSession();
 
 	try {
 	    session.beginTransaction();
@@ -33,7 +37,7 @@ public class RegisterServiceImpl implements RegisterServiceIF {
     @Override
     public boolean deleteEstateAgent(String loginName) {
 
-	Session session = hibernateConnection.getCurrentSession();
+	Session session = _hibernateConnection.getNewSession();
 
 	session.beginTransaction();
 	int affectedRows = session.createQuery("delete from EstateAgent where _login = '" + loginName + "'")
@@ -48,7 +52,7 @@ public class RegisterServiceImpl implements RegisterServiceIF {
     @Override
     public boolean updateEstateAgent(String name, String address, String loginName, String password) {
 
-	Session session = hibernateConnection.getCurrentSession();
+	Session session = _hibernateConnection.getNewSession();
 
 	session.beginTransaction();
 	@SuppressWarnings("unchecked")

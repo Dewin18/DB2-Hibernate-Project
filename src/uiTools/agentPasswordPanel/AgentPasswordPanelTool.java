@@ -4,25 +4,31 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.sql.*;
+import java.util.List;
+
 import javax.swing.*;
 
-import main.DB2ConnectionManager;
+import org.hibernate.Session;
+
+import main.HibernateConnector;
+import materials.EstateAgent;
 import uiTools.Observable;
 
 public class AgentPasswordPanelTool extends Observable {
 
     private AgentPasswordPanelUI _agentPasswordPanelUI;
+    private HibernateConnector _hibernateConnection;
 
     private JTextField _loginField;
     private JPasswordField _passwordField;
     private JLabel _invalidPasswordLabel;
     private JPanel _agentLoginPanel;
-    private String _loginName;
+    private EstateAgent _loggedInAgent;
     private boolean _state;
 
-    public AgentPasswordPanelTool() {
+    public AgentPasswordPanelTool(HibernateConnector hibernateConnection) {
 	_agentPasswordPanelUI = new AgentPasswordPanelUI();
+	_hibernateConnection = hibernateConnection;
 
 	initComponents();
 	registerListener();
@@ -71,29 +77,32 @@ public class AgentPasswordPanelTool extends Observable {
 
     private void checkLogin() {
 
-	try {
-	    Connection connection = DB2ConnectionManager.getInstance().getConnection();
+	String password = new String(_passwordField.getPassword());
+	String loginName = _loginField.getText();
 
-	    String agentPassword = new String(_passwordField.getPassword());
-	    _loginName = _loginField.getText();
+	Session session = _hibernateConnection.getNewSession();
 
-	    String sqlSelectStatement = "SELECT * FROM estate_agent WHERE login = '" + _loginName + "' AND password ='"
-		    + agentPassword + "'";
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<EstateAgent> agents =
+	session.createQuery("from EstateAgent a "
+			  + "where a._login = '" + loginName + "' "
+			  + "and a._password = '" + password + "'")
+			  .getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
 
-	    Statement stmt = connection.createStatement();
-	    ResultSet rs = stmt.executeQuery(sqlSelectStatement);
+	if (!agents.isEmpty()) {
+	    _loggedInAgent = agents.get(0);
+	    setActive();
+	    notifyObserver();
+	} else
+	    _invalidPasswordLabel.setText("Invalid user");
+    }
 
-	    if (rs.next()) {
-		setActive();
-		notifyObserver();
-	    } else {
-		_invalidPasswordLabel.setText("Invalid user");
-	    }
-
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-
+    public EstateAgent getLoggedInAgent() {
+	return _loggedInAgent;
     }
 
     public void resetInvalidPasswordMessage() {
@@ -110,10 +119,6 @@ public class AgentPasswordPanelTool extends Observable {
 
     public JPanel getLoginPanel() {
 	return _agentLoginPanel;
-    }
-
-    public String getLoginName() {
-	return _loginName;
     }
 
     public boolean isActive() {

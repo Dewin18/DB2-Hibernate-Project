@@ -9,12 +9,11 @@ import java.awt.event.FocusListener;
 import javax.swing.*;
 import materials.Apartment;
 import materials.Estate;
+import materials.EstateAgent;
 import materials.House;
 import services.EstateServiceIF;
 
 public class LoginEstateManagerTool {
-
-    private String _loginName;
 
     private JComboBox<String> _comboBox;
 
@@ -41,15 +40,14 @@ public class LoginEstateManagerTool {
     private JTextField _kitchenField;
 
     private JTextField _estateIDField;
-    private JTextField[] _generalFields;
-    private JTextField[] _generalAndHouseFields;
-    private JTextField[] _generalAndApartmentFields;
 
     private JButton _submitButton;
     private JButton _resetButton;
 
     private LoginEstateManagerUI _loginEstateManagerUI;
     private EstateServiceIF _estateService;
+
+    private EstateAgent _loggedInAgent;
 
     public LoginEstateManagerTool(EstateServiceIF estateServiceImpl) {
 	_loginEstateManagerUI = new LoginEstateManagerUI();
@@ -68,9 +66,6 @@ public class LoginEstateManagerTool {
 	_change = _loginEstateManagerUI.getChangeButton();
 	_estateIDField = _loginEstateManagerUI.getEstateIDField();
 	_messageLabel = _loginEstateManagerUI.getMessageLabel();
-	_generalAndHouseFields = _loginEstateManagerUI.getGeneralAndHouseSpecificTextFields();
-	_generalAndApartmentFields = _loginEstateManagerUI.getGeneralAndApartmentSpecificTextFields();
-	_generalFields = _loginEstateManagerUI.getAllGeneralTextFields();
 
 	// general fields init
 	_cityField = _loginEstateManagerUI.getCityField();
@@ -167,7 +162,7 @@ public class LoginEstateManagerTool {
 
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		_loginEstateManagerUI.resetTextFields();
+		resetAllTxtFields();
 	    }
 	});
     }
@@ -204,72 +199,46 @@ public class LoginEstateManagerTool {
 
     private void handleHouseSubmit() {
 
-	if (allFieldsNotNull(_generalAndHouseFields)) {
+	if (inputNotNull(getEstateInputs()) && inputNotNull(getHouseInputs())) {
 
-	    int estateAgentID = _estateService.getEstateAgentIDFromLoginName(_loginName);
-	    if (estateAgentID != -1) {
+	    int estateAgentID = _loggedInAgent.getId();
 
-		String city = _cityField.getText();
-		String postalCode = _postalCodeField.getText();
-		String street = _streetField.getText();
-		String number = _streetNumberField.getText();
-		String squareArea = _squareAreaField.getText();
+	    String city = _cityField.getText();
+	    String postalCode = _postalCodeField.getText();
+	    String street = _streetField.getText();
+	    String number = _streetNumberField.getText();
+	    String squareArea = _squareAreaField.getText();
 
-		int floors = Integer.parseInt(_floorsField.getText());
-		double price = Double.parseDouble(_priceField.getText());
-		int garden = Integer.parseInt(_gardenField.getText());
+	    int floors = Integer.parseInt(_floorsField.getText());
+	    double price = Double.parseDouble(_priceField.getText());
+	    int garden = Integer.parseInt(_gardenField.getText());
 
-		boolean estateAndHouseIsManaged = _estateService.estateAndHouseIsManaged(estateAgentID, city,
-			postalCode, street, number, squareArea, floors, price, garden);
+	    boolean estateAndHouseIsManaged = _estateService.estateAndHouseIsManaged(estateAgentID, city, postalCode,
+		    street, number, squareArea, floors, price, garden);
 
-		if (!estateAndHouseIsManaged) {
+	    if (!estateAndHouseIsManaged) {
 
-		    Estate newEstate = new Estate(estateAgentID, city, postalCode, street, number, squareArea);
-		    _estateService.insertNewEstate(newEstate);
-		    int estateID = _estateService.getEstateID(newEstate);
+		Estate newEstate = new Estate(estateAgentID, city, postalCode, street, number, squareArea);
+		_estateService.insertNewEstate(newEstate);
 
-		    House newHouse = new House(estateID, floors, price, garden);
-		    _estateService.insertNewHouse(newHouse);
-		}
+		int estateID = newEstate.getEstateID();
+
+		House newHouse = new House(estateID, floors, price, garden);
+		_estateService.insertNewHouse(newHouse);
 	    }
 	}
     }
 
     private void handleHouseUpdate() {
 
-	if (estateIDFieldNotNull()) {
+	if (inputNotNull(getEstateInputs()) && inputNotNull(getHouseInputs())) {
 
+	    String[] estateInput = getEstateInputs();
+	    String[] houseInput = getHouseInputs();
 	    String estateID = _estateIDField.getText();
-	    boolean estateAgentManageHouse = _estateService.estateAgentManagesHouse(_loginName, estateID);
 
-	    if (estateAgentManageHouse) {
-		// update estate
-		String[] generalColumnNames = new String[] { "city", "postal_code", "street", "street_number",
-			"square_area" };
-		JTextField[] allGeneralFields = _generalFields;
-
-		int counter = 0;
-		for (JTextField jTextField : allGeneralFields) {
-		    if (!jTextField.getText().isEmpty()) {
-			String currentColumn = generalColumnNames[counter];
-			_estateService.updateGeneralEntry(currentColumn, estateID, jTextField.getText());
-		    }
-		    counter++;
-		}
-
-		// update house
-		String[] houseColumnNames = new String[] { "floors", "price", "garden" };
-		JTextField[] allHouseFields = new JTextField[] { _floorsField, _priceField, _gardenField };
-
-		int counter2 = 0;
-		for (JTextField jTextField : allHouseFields) {
-		    if (!jTextField.getText().isEmpty()) {
-			String currentColumn = houseColumnNames[counter2];
-			_estateService.updateHouseEntry(currentColumn, estateID, jTextField.getText());
-		    }
-		    counter2++;
-		}
-	    }
+	    _estateService.updateEstate(estateID, estateInput);
+	    _estateService.updateHouse(estateID, houseInput);
 	}
     }
 
@@ -287,76 +256,45 @@ public class LoginEstateManagerTool {
 
     private void handleApartmentSubmit() {
 
-	if (allFieldsNotNull(_generalAndApartmentFields)) {
+	if (inputNotNull(getEstateInputs()) && inputNotNull(getApartmentInputs())) {
 
-	    int estateAgentID = _estateService.getEstateAgentIDFromLoginName(_loginName);
+	    int estateAgentID = _loggedInAgent.getId();
 
-	    if (estateAgentID != -1) {
-		String city = _cityField.getText();
-		String postalCode = _postalCodeField.getText();
-		String street = _streetField.getText();
-		String number = _streetNumberField.getText();
-		String squareArea = _squareAreaField.getText();
+	    String city = _cityField.getText();
+	    String postalCode = _postalCodeField.getText();
+	    String street = _streetField.getText();
+	    String number = _streetNumberField.getText();
+	    String squareArea = _squareAreaField.getText();
 
-		int floor = Integer.parseInt(_floorField.getText());
-		double rent = Double.parseDouble(_rentField.getText());
-		int rooms = Integer.parseInt(_roomsField.getText());
-		int balcony = Integer.parseInt(_balconyField.getText());
-		int kitchen = Integer.parseInt(_kitchenField.getText());
+	    int floor = Integer.parseInt(_floorField.getText());
+	    double rent = Double.parseDouble(_rentField.getText());
+	    int rooms = Integer.parseInt(_roomsField.getText());
+	    int balcony = Integer.parseInt(_balconyField.getText());
+	    int kitchen = Integer.parseInt(_kitchenField.getText());
 
-		boolean estateAndApartmentIsManaged = _estateService.estateAndApartmentIsManaged(estateAgentID, city,
-			postalCode, street, number, squareArea, floor, rent, rooms, balcony, kitchen);
+	    boolean estateAndApartmentIsManaged = _estateService.estateAndApartmentIsManaged(estateAgentID, city,
+		    postalCode, street, number, squareArea, floor, rent, rooms, balcony, kitchen);
 
-		if (!estateAndApartmentIsManaged) {
-		    Estate newEstate = new Estate(estateAgentID, city, postalCode, street, number, squareArea);
-		    _estateService.insertNewEstate(newEstate);
-		    int estateID = _estateService.getEstateID(newEstate);
-
-		    Apartment newApartment = new Apartment(estateID, floor, rent, rooms, balcony, kitchen);
-		    _estateService.insertNewApartment(newApartment);
-		}
+	    if (!estateAndApartmentIsManaged) {
+		Estate newEstate = new Estate(estateAgentID, city, postalCode, street, number, squareArea);
+		_estateService.insertNewEstate(newEstate);
+		int estateID = newEstate.getEstateID();
+		Apartment newApartment = new Apartment(estateID, floor, rent, rooms, balcony, kitchen);
+		_estateService.insertNewApartment(newApartment);
 	    }
 	}
     }
 
     private void handleApartmentUpdate() {
 
-	if (estateIDFieldNotNull()) {
+	if (inputNotNull(getEstateInputs()) && inputNotNull(getApartmentInputs())) {
 
+	    String[] estateInput = getEstateInputs();
+	    String[] apartmentInput = getApartmentInputs();
 	    String estateID = _estateIDField.getText();
 
-	    boolean estateAgentManageApartment = _estateService.estateAgentManagesApartment(_loginName, estateID);
-
-	    if (estateAgentManageApartment) {
-		// update estate
-		String[] generalColumnNames = new String[] { "city", "postal_code", "street", "street_number",
-			"square_area" };
-		JTextField[] allGeneralFields = _generalFields;
-
-		int counter = 0;
-		for (JTextField jTextField : allGeneralFields) {
-		    if (!jTextField.getText().isEmpty()) {
-			String currentColumn = generalColumnNames[counter];
-			_estateService.updateGeneralEntry(currentColumn, estateID, jTextField.getText());
-		    }
-		    counter++;
-		}
-
-		// update apartment
-		String[] apartmentColumnNames = new String[] { "floor", "rent", "rooms", "balcony",
-			"built_in_kitchen" };
-		JTextField[] allApartmentFields = new JTextField[] { _floorField, _rentField, _roomsField,
-			_balconyField, _kitchenField };
-
-		int counter2 = 0;
-		for (JTextField jTextField : allApartmentFields) {
-		    if (!jTextField.getText().isEmpty()) {
-			String currentColumn = apartmentColumnNames[counter2];
-			_estateService.updateApartmentEntry(currentColumn, estateID, jTextField.getText());
-		    }
-		    counter2++;
-		}
-	    }
+	    _estateService.updateEstate(estateID, estateInput);
+	    _estateService.updateApartment(estateID, apartmentInput);
 	}
     }
 
@@ -365,7 +303,7 @@ public class LoginEstateManagerTool {
 	if (estateIDFieldNotNull()) {
 
 	    String estateID = _estateIDField.getText();
-	    boolean estateAgentManageEstate = _estateService.estateAgentManagesEstate(_loginName, estateID);
+	    boolean estateAgentManageEstate = _estateService.estateAgentManagesEstate(_loggedInAgent, estateID);
 
 	    if (estateAgentManageEstate) {
 		_estateService.deleteEstate(estateID);
@@ -381,8 +319,8 @@ public class LoginEstateManagerTool {
 	return _loginEstateManagerUI.getLoginPanel();
     }
 
-    public void setLoginName(String loginName) {
-	_loginName = loginName;
+    public void setEstateAgent(EstateAgent loggedInAgent) {
+	_loggedInAgent = loggedInAgent;
     }
 
     private void setTextFieldsEditable(boolean editable) {
@@ -411,14 +349,9 @@ public class LoginEstateManagerTool {
 	_estateIDField.setBackground(Color.LIGHT_GRAY);
     }
 
-//    private void setMessageText(Color color, String text) {
-//	_messageLabel.setForeground(color);
-//	_messageLabel.setText(text);
-//    }
-
-    private boolean allFieldsNotNull(JTextField[] fields) {
-	for (JTextField jTextField : fields) {
-	    if (jTextField.getText().isEmpty())
+    private boolean inputNotNull(String[] inputs) {
+	for (String string : inputs) {
+	    if(string.equals(""))
 		return false;
 	}
 	return true;
@@ -439,7 +372,33 @@ public class LoginEstateManagerTool {
 	setTextFieldsEditable(true);
 	disableEstateIDField();
 	_comboBox.setSelectedIndex(0);
-
 	_loginEstateManagerUI.changeApartmentToHousePanel();
     }
+
+    public String[] getEstateInputs() {
+	return new String[] {_cityField.getText(), 
+			     _postalCodeField.getText(), 
+			     _streetField.getText(),
+			     _streetNumberField.getText(), 
+			     _squareAreaField.getText()};
+    }
+
+    public String[] getHouseInputs() {
+	return new String[] {_floorsField.getText(), 
+			     _priceField.getText(), 
+			     _gardenField.getText()};
+    }
+
+    public String[] getApartmentInputs() {
+	return new String[] {_floorField.getText(), 
+			     _rentField.getText(), 
+			     _roomsField.getText(),
+			     _balconyField.getText(), 
+			     _kitchenField.getText()};
+    }
+    
+    // private void setMessageText(Color color, String text) {
+    // _messageLabel.setForeground(color);
+    // _messageLabel.setText(text);
+    // }
 }

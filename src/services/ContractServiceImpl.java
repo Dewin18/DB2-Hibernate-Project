@@ -1,206 +1,194 @@
 package services;
 
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
-import main.DB2ConnectionManager;
+import org.hibernate.Session;
+import org.hibernate.exception.ConstraintViolationException;
+
+import main.HibernateConnector;
+import materials.Apartment;
 import materials.Contract;
+import materials.House;
 import materials.Person;
 import materials.PurchaseContract;
 import materials.TenancyContract;
 
 public class ContractServiceImpl implements ContractServiceIF {
 
-    private Connection connection;
-    private Statement stmt;
-
-    public ContractServiceImpl() {
-	try {
-	    connection = DB2ConnectionManager.getInstance().getConnection();
-	    stmt = connection.createStatement();
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
+    private HibernateConnector _hibernateConnection;
+    
+    public ContractServiceImpl(HibernateConnector hibernateConnection) {
+	_hibernateConnection  = hibernateConnection;
     }
 
     @Override
-    public boolean makeContract(Contract contract) {
+    public boolean insertContract(Contract newContract) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
 	try {
-	    String sqlMakeContract = "INSERT INTO contract(contract_no, date, place) " + "VALUES (?, ?, ?)";
-
-	    PreparedStatement prepStmt = connection.prepareStatement(sqlMakeContract);
-
-	    prepStmt.setInt(1, contract.getContractNumber());
-	    prepStmt.setDate(2, contract.getDate());
-	    prepStmt.setString(3, contract.getPlace());
-	    prepStmt.executeUpdate();
+	    session.beginTransaction();
+	    session.save(newContract);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	} catch (SQLException e) {
+	} catch (ConstraintViolationException e) {
 	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
 	}
-	return false;
     }
 
     @Override
-    public boolean makePurchaseContract(PurchaseContract purchaseContract) {
+    public boolean insertPurchaseContract(PurchaseContract newPurchaseContract) {
+
+	Session session = _hibernateConnection.getNewSession();
 
 	try {
-	    String sqlMakePurchaseContract = "INSERT INTO purchase_contract(fk_id_person, fk_id_house, fk_id_contract, no_of_installments, intrest_rate) "
-		    + "VALUES(?, ?, ?, ? ,?)";
-
-	    PreparedStatement purchaseStmt = connection.prepareStatement(sqlMakePurchaseContract);
-
-	    purchaseStmt.setInt(1, purchaseContract.getPersonID());
-	    purchaseStmt.setInt(2, purchaseContract.getHouseID());
-	    purchaseStmt.setInt(3, purchaseContract.getContractID());
-	    purchaseStmt.setInt(4, purchaseContract.getNumberOfInstallments());
-	    purchaseStmt.setInt(5, purchaseContract.getIntrestRate());
-	    purchaseStmt.executeUpdate();
+	    session.beginTransaction();
+	    session.save(newPurchaseContract);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	} catch (SQLException e) {
+	} catch (ConstraintViolationException e) {
 	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
 	}
-	return false;
     }
 
     @Override
-    public boolean makeTenancyContract(TenancyContract tenancyContract) {
+    public boolean insertTenancyContract(TenancyContract newTenancyContract) {
+
+	Session session = _hibernateConnection.getNewSession();
 
 	try {
-	    String sqlMakeTenancyContract = "INSERT INTO tenancy_contract(fk_id_person, fk_id_apartment, fk_id_contract, start_date, duration_days, additional_costs) "
-		    + "VALUES(?, ?, ?, ? ,?, ?)";
-
-	    PreparedStatement purchaseStmt = connection.prepareStatement(sqlMakeTenancyContract);
-
-	    purchaseStmt.setInt(1, tenancyContract.getPersonID());
-	    purchaseStmt.setInt(2, tenancyContract.getApartmentID());
-	    purchaseStmt.setInt(3, tenancyContract.getContractID());
-	    purchaseStmt.setDate(4, tenancyContract.getStartDate());
-	    purchaseStmt.setInt(5, tenancyContract.getDuarion());
-	    purchaseStmt.setInt(6, tenancyContract.getAdditionalCosts());
-	    purchaseStmt.executeUpdate();
+	    session.beginTransaction();
+	    session.save(newTenancyContract);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	} catch (SQLException e) {
+	} catch (ConstraintViolationException e) {
 	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
 	}
-	return false;
-    }
-
-    @Override
-    public int getNumberOfContracts() {
-	try {
-	    String sqlCountContracts = "SELECT COUNT(*) " + "FROM contract";
-
-	    ResultSet resultSet = stmt.executeQuery(sqlCountContracts);
-	    resultSet.next();
-	    return resultSet.getInt(1);
-
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return -1;
-    }
-
-    @Override
-    public ResultSet getContractSet() {
-	try {
-	    String sqlSelectContracts = "SELECT * " + "FROM contract";
-
-	    ResultSet resultContracts = stmt.executeQuery(sqlSelectContracts);
-	    return resultContracts;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return null;
     }
 
     @Override
     public List<Contract> getContractList() {
-	try {
-	    List<Contract> contracts = new ArrayList<>();
+	
+	Session session = _hibernateConnection.getNewSession();
 
-	    String sqlSelectContracts = "SELECT * " + "FROM contract";
-
-	    ResultSet resultContracts = stmt.executeQuery(sqlSelectContracts);
-
-	    while (resultContracts.next()) {
-
-		int idContract = resultContracts.getInt("id_contract");
-		int contractNo = resultContracts.getInt("contract_no");
-		Date date = resultContracts.getDate("date");
-		String place = resultContracts.getString("place");
-
-		contracts.add(new Contract(idContract, contractNo, date, place));
-	    }
-	    return contracts;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return null;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Contract> contracts = 
+	session.createQuery("from Contract").getResultList();
+	session.getTransaction().commit();
+	session.close();
+	return contracts;
     }
 
     @Override
     public boolean personExist(String firstName, String name, String address) {
-	try {
-	    String sqlSelectPerson = "SELECT * " + "FROM person " + "WHERE first_name ='" + firstName + "' "
-		    + "AND name ='" + name + "' " + "AND address ='" + address + "'";
+	
+	Session session = _hibernateConnection.getNewSession();
 
-	    ResultSet resultPerson = stmt.executeQuery(sqlSelectPerson);
-	    if (resultPerson.next())
-		return true;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Person> persons = 
+	session.createQuery("from Person p "
+			  + "where p._firstName ='" + firstName + "' "
+			  + "and p._name = '" + name + "' "
+			  + "and p._address = '" + address + "'")
+			.getResultList();
+	
+	
+	session.getTransaction().commit();
+	session.close();
+	return !persons.isEmpty();
     }
 
     @Override
-    public boolean insertPerson(Person person) {
+    public boolean insertPerson(Person newPerson) {
+	
+	Session session = _hibernateConnection.getNewSession();
+
 	try {
-	    String sqlInsertPerson = "INSERT INTO person(first_name, name, address) " + "VALUES (?, ?, ?)";
-
-	    PreparedStatement prepStmt = connection.prepareStatement(sqlInsertPerson);
-
-	    prepStmt.setString(1, person.getFirstName());
-	    prepStmt.setString(2, person.getLastName());
-	    prepStmt.setString(3, person.getAddress());
-	    prepStmt.executeUpdate();
+	    session.beginTransaction();
+	    session.save(newPerson);
+	    session.getTransaction().commit();
+	    session.close();
 	    return true;
-	} catch (SQLException e) {
+	} catch (ConstraintViolationException e) {
 	    e.printStackTrace();
+	    session.getTransaction().rollback();
+	    return false;
 	}
-	return false;
     }
 
     @Override
-    public boolean entryExist(String table, String column, String entry) {
-	try {
-	    String sqlSelectContract = "SELECT * " + "FROM " + table + " " + "WHERE " + column + " = '" + entry + "'";
+    public boolean personExist(String personID) {
+	
+	Session session = _hibernateConnection.getNewSession();
 
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectContract);
-	    boolean entryExist = resultSet.next() ? true : false;
-	    return entryExist;
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return false;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Person> persons = 
+	session.createQuery("from Person p "
+			  + "where p._personID ='" + personID + "'")
+			.getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !persons.isEmpty();
     }
 
     @Override
-    public int getContractID(int contractNo) {
-	try {
-	    String sqlSelectContract = "SELECT * " + "FROM contract " + "WHERE contract_no = '" + contractNo + "'";
+    public boolean contractExist(String contractNo) {
+	Session session = _hibernateConnection.getNewSession();
 
-	    ResultSet resultSet = stmt.executeQuery(sqlSelectContract);
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Contract> contracts = 
+	session.createQuery("from Contract c "
+			  + "where c._contractNumber ='" + contractNo + "'")
+			.getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !contracts.isEmpty();
+    }
 
-	    if (resultSet.next())
-		return resultSet.getInt("id_contract");
-	    return -1;
+    @Override
+    public boolean houseExist(String houseID) {
+	Session session = _hibernateConnection.getNewSession();
 
-	} catch (SQLException e) {
-	    e.printStackTrace();
-	}
-	return -1;
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<House> houses = 
+	session.createQuery("from House h "
+			  + "where h._houseID ='" + houseID + "'")
+			.getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !houses.isEmpty();
+    }
+
+    @Override
+    public boolean apartmentExist(String apartmentID) {
+	Session session = _hibernateConnection.getNewSession();
+
+	session.beginTransaction();
+	@SuppressWarnings("unchecked")
+	List<Apartment> apartments = 
+	session.createQuery("from Apartment a "
+			  + "where a._apartmentID ='" + apartmentID + "'")
+			.getResultList();
+	
+	session.getTransaction().commit();
+	session.close();
+	return !apartments.isEmpty();
     }
 }

@@ -1,6 +1,5 @@
 package services;
 
-import java.sql.ResultSet;
 import java.util.List;
 
 import materials.Contract;
@@ -10,23 +9,25 @@ import materials.TenancyContract;
 
 public interface ContractServiceIF {
     
-    public boolean makeContract(Contract contract);
-    
-    public int getContractID(int contractNo);
-    
-    public boolean makePurchaseContract(PurchaseContract purchaseContract);
-    
-    public boolean makeTenancyContract(TenancyContract tenancyContract);
-    
-    public ResultSet getContractSet();
-    
     public List<Contract> getContractList();
     
-    public int getNumberOfContracts();
+    // inserts
+    public boolean insertContract(Contract contract);
     
-    public boolean personExist(String firstName, String name, String address);
+    public boolean insertPurchaseContract(PurchaseContract purchaseContract);
+    
+    public boolean insertTenancyContract(TenancyContract tenancyContract);
     
     public boolean insertPerson(Person person);
     
-    public boolean entryExist(String table, String column, String entry);
+    // queries
+    public boolean personExist(String firstName, String name, String address);
+    
+    public boolean personExist(String personID);
+    
+    public boolean contractExist(String contractID);
+    
+    public boolean houseExist(String houseID);
+    
+    public boolean apartmentExist(String apartmentID);
 }

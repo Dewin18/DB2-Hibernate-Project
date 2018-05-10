@@ -1,16 +1,19 @@
 package services;
 
+import java.util.List;
+
 import materials.Apartment;
 import materials.Estate;
+import materials.EstateAgent;
 import materials.House;
 
 public interface EstateServiceIF {
     
     // queries
     public int getEstateAgentIDFromLoginName(String loginName);
-
-    public int getEstateID(Estate estate);
     
+    public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent);
+
     public boolean estateAndHouseIsManaged(
 	        int estateAgentID, 
 		String city, 
@@ -35,28 +38,28 @@ public interface EstateServiceIF {
 		   int balcony, 
 		   int kitchen);
     
-    public boolean estateAgentManagesEstate(String loginName, String estateID);
-
-    public boolean estateAgentManagesApartment(String loginName, String estateID);
-
-    public boolean estateAgentManagesHouse(String loginName, String estateID);
+    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID);
+    
+//    public boolean estateAgentManagesApartment(EstateAgent estateAgent, String estateID);
+//
+//    public boolean estateAgentManagesHouse(EstateAgent estateAgent, String estateID);
     
     // inserts 
-    public boolean insertNewEstate(Estate estate);
+    public boolean insertNewEstate(Estate newEstate);
     
-    public boolean insertNewHouse(House house);
+    public boolean insertNewHouse(House newHouse);
     
     public boolean insertNewApartment(Apartment newApartment);
     
 
     // updates
-    public boolean updateGeneralEntry(String column, String estateID, String newAttribute);
+    public boolean updateEstate(String estateID, String[] newEstateAttributes);
     
-    public boolean updateHouseEntry(String column, String estateID, String newAttribute);
+    public boolean updateHouse(String estateID, String[] newHouseAttributes);
     
-    public boolean updateApartmentEntry(String column, String estateID, String newAttribute);
-
+    public boolean updateApartment(String estateID, String[] newApartmentAttributes);
     
     // deletions
     public boolean deleteEstate(String estateID);
+
 }

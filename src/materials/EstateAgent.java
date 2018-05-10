@@ -8,30 +8,29 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name="estate_agent")
+@Table(name = "estate_agent")
 public class EstateAgent {
-    
 
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    @Column(name="id_estate_agent")
-    private int id;
-    
-    @Column(name="name")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_estate_agent")
+    private int _id;
+
+    @Column(name = "name")
     private String _name;
-    
-    @Column(name="address")
+
+    @Column(name = "address")
     private String _address;
 
-    @Column(name="login", unique = true)
+    @Column(name = "login", unique = true)
     private String _login;
 
-    @Column(name="password")
+    @Column(name = "password")
     private String _password;
-    
+
     public EstateAgent() {
     }
-    
+
     public EstateAgent(String name, String address, String login, String password) {
 	_name = name;
 	_address = address;
@@ -40,49 +39,49 @@ public class EstateAgent {
     }
 
     public int getId() {
-        return id;
+	return _id;
     }
 
     public void setId(int id) {
-        this.id = id;
+	this._id = id;
     }
 
     public String getName() {
-        return _name;
+	return _name;
     }
 
     public void setName(String name) {
-        _name = name;
+	_name = name;
     }
 
     public String getAddress() {
-        return _address;
+	return _address;
     }
 
     public void setAddress(String address) {
-        _address = address;
+	_address = address;
     }
 
     public String getLogin() {
-        return _login;
+	return _login;
     }
 
     public void setLogin(String login) {
-        _login = login;
+	_login = login;
     }
 
     public String getPassword() {
-        return _password;
+	return _password;
     }
 
     public void setPassword(String password) {
-        _password = password;
+	_password = password;
     }
 
     @Override
     public String toString() {
-	return "EstateAgent [id=" + id + ", _name=" + _name + ", _address=" + _address + ", _login=" + _login
+	return "EstateAgent [id=" + _id + ", _name=" + _name + ", _address=" + _address + ", _login=" + _login
 		+ ", _password=" + _password + "]";
     }
-    
+
 }

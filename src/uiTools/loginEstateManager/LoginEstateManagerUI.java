@@ -447,49 +447,6 @@ public class LoginEstateManagerUI {
 	return allTextFields;
     }
 
-    public JTextField[] getGeneralAndHouseSpecificTextFields() {
-	JTextField[] houseSpecificTextFields = new JTextField[] { _cityField, _postalCodeField, _streetField,
-		_streetNumberField, _squareAreaField, _floorsField, _priceField, _gardenField };
-
-	return houseSpecificTextFields;
-    }
-
-    public JTextField[] getGeneralAndApartmentSpecificTextFields() {
-	JTextField[] apartmentSpecificTextFields = new JTextField[] { _cityField, _postalCodeField, _streetField,
-		_streetNumberField, _squareAreaField, _floorField, _rentField, _roomsField, _balconyField,
-		_builtInKitchenField };
-
-	return apartmentSpecificTextFields;
-    }
-
-    public JTextField[] allHouseSpecificTextFields() {
-	JTextField[] houseSpecificTextFields = new JTextField[] { _floorsField, _priceField, _gardenField };
-
-	return houseSpecificTextFields;
-    }
-
-    public JTextField[] allApartmentSpecificTextFields() {
-	JTextField[] apartmentSpecificTextFields = new JTextField[] { _floorField, _rentField, _roomsField,
-		_balconyField, _builtInKitchenField };
-
-	return apartmentSpecificTextFields;
-    }
-
-    public JTextField[] getAllGeneralTextFields() {
-	JTextField[] generalTextFields = new JTextField[] { _cityField, _postalCodeField, _streetField,
-		_streetNumberField, _squareAreaField };
-
-	return generalTextFields;
-    }
-
-    public void resetTextFields() {
-	JTextField[] allTextFields = getAllTextFields();
-
-	for (JTextField jTextField : allTextFields) {
-	    jTextField.setText("");
-	}
-    }
-
     public JComboBox<String> getComboBox() {
 	return _comboBox;
     }

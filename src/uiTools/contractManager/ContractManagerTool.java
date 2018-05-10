@@ -202,14 +202,14 @@ public class ContractManagerTool {
 	    }
 
 	    private void initJTable() {
-		int entries = _contractService.getNumberOfContracts();
-		String[][] data = new String[entries][4];
 
 		List<Contract> contracts = _contractService.getContractList();
 
+		String[][] data = new String[contracts.size()][4];
+
 		int index = 0;
 		for (Contract contract : contracts) {
-		    String idContract = String.valueOf(contract.getIDContract());
+		    String idContract = String.valueOf(contract.getContractID());
 		    String contractNo = String.valueOf(contract.getContractNumber());
 		    String date = contract.getDate().toString();
 		    String place = contract.getPlace();
@@ -281,7 +281,7 @@ public class ContractManagerTool {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
 		if (_insertPersonButton.isSelected()) {
-		    handleInsert();
+		    handleInsertPerson();
 		} else if (_signContractButton.isSelected()) {
 		    handleSignContract();
 		}
@@ -308,7 +308,7 @@ public class ContractManagerTool {
 	}
     }
 
-    private void handleInsert() {
+    private void handleInsertPerson() {
 	if (personFieldsNotNull()) {
 	    String firstName = _firstNameField.getText();
 	    String name = _lastNameField.getText();
@@ -348,10 +348,9 @@ public class ContractManagerTool {
 
 	if (fieldsNotNull(generalFields) && fieldsNotNull(purchaseFields)) {
 
-	    boolean contractExist = _contractService.entryExist("contract", "contract_no",
-		    _contractNumberField.getText());
-	    boolean personExist = _contractService.entryExist("person", "id_person", _personIDField.getText());
-	    boolean houseExist = _contractService.entryExist("house", "id_house", _houseIDField.getText());
+	    boolean contractExist = _contractService.contractExist(_contractNumberField.getText());
+	    boolean personExist = _contractService.personExist(_personIDField.getText());
+	    boolean houseExist = _contractService.houseExist(_houseIDField.getText());
 
 	    if (!contractExist) {
 		if (personExist && houseExist) {
@@ -369,25 +368,19 @@ public class ContractManagerTool {
 	Date date = getCurrentDateInSQLFormat();
 	String place = _placeField.getText();
 
+	int personID = Integer.parseInt(_personIDField.getText());
+	int houseID = Integer.parseInt(_houseIDField.getText());
+	int noOfInstallments = Integer.parseInt(_noOfInstallmentsField.getText());
+	int intrestRate = Integer.parseInt(_intrestRateField.getText());
+
 	Contract newContract = new Contract(contract_no, date, place);
-	_contractService.makeContract(newContract);
+	_contractService.insertContract(newContract);
+	
+	PurchaseContract newPurchaseContract = new PurchaseContract(personID, houseID, newContract.getContractID(),
+		noOfInstallments, intrestRate);
 
-	int newContractID = _contractService.getContractID(newContract.getContractNumber());
-
-	if (newContractID != -1) {
-
-	    int personID = Integer.parseInt(_personIDField.getText());
-	    int houseID = Integer.parseInt(_houseIDField.getText());
-	    int noOfInstallments = Integer.parseInt(_noOfInstallmentsField.getText());
-	    int intrestRate = Integer.parseInt(_intrestRateField.getText());
-
-	    PurchaseContract newPurchaseContract = new PurchaseContract(personID, houseID, newContractID,
-		    noOfInstallments, intrestRate);
-
-	    _contractService.makePurchaseContract(newPurchaseContract);
-	    setMessageText(Color.GREEN.darker(), "success. Purchase contract created");
-	    _contractManagerUI.clearAllTextFields();
-	}
+	_contractService.insertPurchaseContract(newPurchaseContract);
+	_contractManagerUI.clearAllTextFields();
     }
 
     private Date getCurrentDateInSQLFormat() {
@@ -401,11 +394,9 @@ public class ContractManagerTool {
 
 	if (fieldsNotNull(generalFields) && fieldsNotNull(tenancyFields) && startDateSelected()) {
 
-	    boolean contractExist = _contractService.entryExist("contract", "contract_no",
-		    _contractNumberField.getText());
-	    boolean personExist = _contractService.entryExist("person", "id_person", _personIDField.getText());
-	    boolean apartmentExist = _contractService.entryExist("apartment", "id_apartment",
-		    _apartmentIDField.getText());
+	    boolean contractExist = _contractService.contractExist(_contractNumberField.getText());
+	    boolean personExist = _contractService.personExist(_personIDField.getText());
+	    boolean apartmentExist = _contractService.apartmentExist(_apartmentIDField.getText());
 
 	    if (!contractExist) {
 		if (personExist && apartmentExist) {
@@ -423,28 +414,21 @@ public class ContractManagerTool {
 	int contract_no = Integer.parseInt(_contractNumberField.getText());
 	Date date = getCurrentDateInSQLFormat();
 	String place = _placeField.getText();
+	int personID = Integer.parseInt(_personIDField.getText());
+	
+	int apartmentID = Integer.parseInt(_apartmentIDField.getText());
+	Date startDate = getSelectedDate();
+	int duration = Integer.parseInt(_durationField.getText());
+	int additionalCosts = Integer.parseInt(_addCostField.getText());
 
 	Contract newContract = new Contract(contract_no, date, place);
-	_contractService.makeContract(newContract);
+	_contractService.insertContract(newContract);
 
-	int newContractID = _contractService.getContractID(newContract.getContractNumber());
+	TenancyContract newTenancyContract = new TenancyContract(personID, apartmentID, newContract.getContractID(),
+		startDate, duration, additionalCosts);
 
-	if (newContractID != -1) {
-
-	    int personID = Integer.parseInt(_personIDField.getText());
-	    int apartmentID = Integer.parseInt(_apartmentIDField.getText());
-	    Date startDate = getSelectedDate();
-	    int duration = Integer.parseInt(_durationField.getText());
-	    int additionalCosts = Integer.parseInt(_addCostField.getText());
-
-	    TenancyContract newTenancyContract = new TenancyContract(personID, apartmentID, newContractID, startDate,
-		    duration, additionalCosts);
-
-	    _contractService.makeTenancyContract(newTenancyContract);
-
-	    setMessageText(Color.GREEN.darker(), "success. Tenancy contract created");
-	    _contractManagerUI.clearAllTextFields();
-	}
+	_contractService.insertTenancyContract(newTenancyContract);
+	_contractManagerUI.clearAllTextFields();
     }
 
     @SuppressWarnings("deprecation")
