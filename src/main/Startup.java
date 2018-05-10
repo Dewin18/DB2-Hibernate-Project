@@ -2,7 +2,7 @@ package main;
 
 import uiTools.MainTool;
 
-//author Dewin, Niko
+//author Dewin
 
 public class Startup {
 

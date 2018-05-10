@@ -9,41 +9,6 @@ import materials.House;
 
 public interface EstateServiceIF {
     
-    // queries
-    public int getEstateAgentIDFromLoginName(String loginName);
-    
-    public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent);
-
-    public boolean estateAndHouseIsManaged(
-	        int estateAgentID, 
-		String city, 
-		String postalCode, 
-		String street,
-		String number, 
-		String squareArea, 
-		int floors, 
-		double price, 
-		int garden);
-    
-    public boolean estateAndApartmentIsManaged(
-	    	   int estateAgentID, 
-		   String city, 
-		   String postalCode, 
-		   String street,
-		   String number, 
-		   String squareArea,
-		   int floor, 
-		   double rent, 
-		   int rooms, 
-		   int balcony, 
-		   int kitchen);
-    
-    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID);
-    
-//    public boolean estateAgentManagesApartment(EstateAgent estateAgent, String estateID);
-//
-//    public boolean estateAgentManagesHouse(EstateAgent estateAgent, String estateID);
-    
     // inserts 
     public boolean insertNewEstate(Estate newEstate);
     
@@ -61,5 +26,33 @@ public interface EstateServiceIF {
     
     // deletions
     public boolean deleteEstate(String estateID);
+    
+    // queries
+    public int getEstateAgentIDFromLoginName(String loginName);
+    
+    public List<Estate> getEstatesForEstateAgent(EstateAgent estateAgent);
 
+    public boolean estateAndHouseIsManaged(int estateAgentID, 
+					   String city, 
+					   String postalCode, 
+					   String street,
+					   String number, 
+					   String squareArea, 
+					   int floors, 
+					   double price, 
+					   int garden);
+    
+    public boolean estateAndApartmentIsManaged(int estateAgentID,
+	    				      String city, 
+	    				      String postalCode, 
+	    				      String street,
+	    				      String number, 
+	    				      String squareArea,
+	    				      int floor, 
+	    				      double rent, 
+	    				      int rooms, 
+	    				      int balcony, 
+	    				      int kitchen);
+    
+    public boolean estateAgentManagesEstate(EstateAgent estateAgent, String estateID);
 }
