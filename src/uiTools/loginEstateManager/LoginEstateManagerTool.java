@@ -3,8 +3,8 @@ package uiTools.loginEstateManager;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 
 import javax.swing.*;
 import materials.Apartment;
@@ -171,12 +171,7 @@ public class LoginEstateManagerTool {
 	JTextField[] allFields = _loginEstateManagerUI.getAllTextFields();
 
 	for (JTextField jTextField : allFields) {
-	    jTextField.addFocusListener(new FocusListener() {
-
-		@Override
-		public void focusLost(FocusEvent e) {
-		}
-
+	    jTextField.addFocusListener(new FocusAdapter() {
 		@Override
 		public void focusGained(FocusEvent e) {
 		    _messageLabel.setText(" ");

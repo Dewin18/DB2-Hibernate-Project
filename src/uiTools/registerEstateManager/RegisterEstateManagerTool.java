@@ -214,12 +214,7 @@ public class RegisterEstateManagerTool {
 	JTextField[] allFields = _registerEstateManagerUI.getAllTextFields();
 
 	for (JTextField jTextField : allFields) {
-	    jTextField.addFocusListener(new FocusListener() {
-
-		@Override
-		public void focusLost(FocusEvent e) {
-		}
-
+	    jTextField.addFocusListener(new FocusAdapter() {
 		@Override
 		public void focusGained(FocusEvent e) {
 		    _messageLabel.setText(" ");

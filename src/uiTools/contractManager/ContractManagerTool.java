@@ -4,8 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.sql.Date;
 import java.util.List;
 
@@ -294,12 +294,7 @@ public class ContractManagerTool {
 	JTextField[] allFields = _contractManagerUI.getAllTextFields();
 
 	for (JTextField jTextField : allFields) {
-	    jTextField.addFocusListener(new FocusListener() {
-
-		@Override
-		public void focusLost(FocusEvent e) {
-		}
-
+	    jTextField.addFocusListener(new FocusAdapter() {
 		@Override
 		public void focusGained(FocusEvent e) {
 		    _messageLabel.setText(" ");
